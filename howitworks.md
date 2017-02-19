@@ -41,7 +41,7 @@ To change which side is white/positive, the start and end points of the line can
 
 A quadratic bezier has three control points: `p0`, `p1`, `p2`. The bezier's parametric function is made up of these control points and a `t` parameter:
 
-![bezier_equation](images/bezier_equation.svg)
+![bezier_equation](https://cdn.rawgit.com/kocsis1david/font-demo/master/images/bezier_equation.svg)
 
 (The basics of beziers can be found on [Wikipedia](https://en.wikipedia.org/wiki/B%C3%A9zier_curve) or [here](https://pomax.github.io/bezierinfo/))
 

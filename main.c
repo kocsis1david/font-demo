@@ -42,6 +42,7 @@ typedef struct fd_HostGlyphInfo
 typedef struct fd_DeviceGlyphInfo
 {
 	fd_Rect bbox;
+	//fd_Rect cbox;
 	fd_CellInfo cell_info;
 } fd_DeviceGlyphInfo;
 
@@ -191,6 +192,8 @@ static void load_font(fd_Render *r)
 		uint32_t cell_count = o->cell_count_x * o->cell_count_y;
 		memcpy(cells + cell_offset, o->cells, sizeof(uint32_t) * cell_count);
 		memcpy(points + point_offset, o->points, sizeof(vec2) * o->num_of_points);
+
+		//fd_outline_u16_points(o, &dgi->cbox, points + point_offset);
 
 		point_offset += o->num_of_points;
 		cell_offset += cell_count;
@@ -677,7 +680,7 @@ static void end_text(fd_Render *r)
 		.srcAccessMask = VK_ACCESS_VERTEX_ATTRIBUTE_READ_BIT,
 		.dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT,
 		.buffer = r->instance_buffer,
-		.offset = offset,
+		.offset = 0,
 		.size = size,
 	};
 
@@ -692,7 +695,7 @@ static void end_text(fd_Render *r)
 
 	VkBufferCopy copy = {
 		.srcOffset = offset,
-		.dstOffset = offset,
+		.dstOffset = 0,
 		.size = size
 	};
 
@@ -756,9 +759,13 @@ static void record_current_command_buffer(fd_Render *r)
 
 	begin_text(r);
 
-	char fps_str[16];
-	sprintf(fps_str, "FPS: %d", r->fps);
-	append_text(r, 5.0f, 25.0f, 0.02f, fps_str);
+	char str[32];
+	sprintf(str, "frame time: %.2f ms", (1000.0f / r->fps));
+	append_text(r, 5.0f, 25.0f, 0.02f, str);
+
+	sprintf(str, "fps: %d", r->fps);
+	append_text(r, 5.0f, 55.0f, 0.02f, str);
+
 
 	const char *lines[] = {
 		"@&(3 Lorem ipsum dolor sit amet, consectetur adipiscing elit. Vivamus sit amet scelerisque augue, sit amet commodo neque. Vestibulum",
@@ -823,10 +830,7 @@ static void record_current_command_buffer(fd_Render *r)
 
 	vkCmdBeginRenderPass(cmd_buf, &render_pass_bi, VK_SUBPASS_CONTENTS_INLINE);
 
-	VkDeviceSize offsets[] = {
-		r->ring_buffer_index * MAX_VISIBLE_GLYPHS * sizeof(fd_GlyphInstance)
-	};
-
+	VkDeviceSize offsets[] = { 0 };
 	vkCmdBindVertexBuffers(cmd_buf, 0, 1, &r->instance_buffer, offsets);
 
 	vkCmdBindDescriptorSets(cmd_buf, VK_PIPELINE_BIND_POINT_GRAPHICS, 
@@ -1094,7 +1098,7 @@ static void create_instance_buffer(fd_Render *r)
 {
 	VkBufferCreateInfo ci = {
 		.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
-		.size = MAX_VISIBLE_GLYPHS * sizeof(fd_GlyphInstance) * r->ring_buffer_count,
+		.size = MAX_VISIBLE_GLYPHS * sizeof(fd_GlyphInstance),
 		.usage = VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
 		.sharingMode = VK_SHARING_MODE_EXCLUSIVE,
 	};
@@ -1104,7 +1108,7 @@ static void create_instance_buffer(fd_Render *r)
 
 	VkBufferCreateInfo staging_ci = {
 		.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
-		.size = ci.size,
+		.size = ci.size * r->ring_buffer_count,
 		.usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
 		.sharingMode = VK_SHARING_MODE_EXCLUSIVE,
 	};
@@ -1594,7 +1598,7 @@ void scroll_callback(GLFWwindow* window, double xoffset, double yoffset)
 {
 	fd_Render *r = (fd_Render *)(glfwGetWindowUserPointer(window));
 
-	r->target_canvas_scale *= powf(1.4f, (float)yoffset);
+	r->target_canvas_scale *= powf(1.3f, (float)yoffset);
 }
 
 int main(int argc, const char **args)

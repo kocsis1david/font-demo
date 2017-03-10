@@ -48,7 +48,7 @@ static void outline_add_odd_point(fd_Outline *o)
 {
 	if (o->num_of_points % 2 != 0)
 	{
-		vec2 p = { 0 };
+		vec2 p = { o->bbox.min_x, o->bbox.min_y };
 		add_outline_point(o, p);
 	}
 }
@@ -780,4 +780,45 @@ void fd_outline_destroy(fd_Outline *o)
 	if (o->points) free(o->points);
 	if (o->cells) free(o->cells);
 	memset(o, 0, sizeof(fd_Outline));
+}
+
+void fd_outline_cbox(fd_Outline *o, fd_Rect *cbox)
+{
+	if (o->num_of_points == 0)
+		return;
+
+	cbox->min_x = o->points[0][0];
+	cbox->min_y = o->points[0][1];
+	cbox->max_x = o->points[0][0];
+	cbox->max_y = o->points[0][1];
+
+	for (uint32_t i = 1; i < o->num_of_points; i++)
+	{
+		float x = o->points[i][0];
+		float y = o->points[i][1];
+
+		cbox->min_x = min(cbox->min_x, x);
+		cbox->min_y = min(cbox->min_y, y);
+		cbox->max_x = max(cbox->max_x, x);
+		cbox->max_y = max(cbox->max_y, y);
+	}
+}
+
+static inline uint16_t gen_u16_value(float x, float min, float max)
+{
+	return (uint16_t)((x - min) / (max - min) * UINT16_MAX);
+}
+
+void fd_outline_u16_points(fd_Outline *o, fd_Rect *cbox, fd_PointU16 *pout)
+{
+	fd_outline_cbox(o, cbox);
+
+	for (uint32_t i = 0; i < o->num_of_points; i++)
+	{
+		float x = o->points[i][0];
+		float y = o->points[i][1];
+
+		pout[i].x = gen_u16_value(x, cbox->min_x, cbox->max_x);
+		pout[i].y = gen_u16_value(y, cbox->min_y, cbox->max_y);
+	}
 }

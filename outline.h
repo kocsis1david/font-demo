@@ -37,9 +37,16 @@ typedef struct fd_Outline
 	uint32_t corner_fix_begin;
 } fd_Outline;
 
+typedef struct fd_PointU16
+{
+	uint16_t x, y;
+} fd_PointU16;
+
 void fd_outline_convert(FT_Outline *outline, fd_Outline *o, char c);
 void fd_outline_decompose(FT_Outline *outline, fd_Outline *o);
 void fd_outline_make_cells(fd_Outline *o);
 void fd_outline_subdivide(fd_Outline *o);
 //void fd_outline_fix_corners(fd_Outline *o);
 void fd_outline_destroy(fd_Outline *o);
+void fd_outline_cbox(fd_Outline *o, fd_Rect *cbox);
+void fd_outline_u16_points(fd_Outline *o, fd_Rect *cbox, fd_PointU16 *pout);

@@ -29,7 +29,7 @@ static inline void dyn_array_grow(void **data, uint32_t *capacity, size_t elemen
 static void add_outline_point(fd_Outline *o, vec2 point)
 {
 	if (o->point_capacity == o->num_of_points)
-		dyn_array_grow(&(void*)o->points, &o->point_capacity, sizeof(vec2));
+		dyn_array_grow(&o->points, &o->point_capacity, sizeof(vec2));
 
 	memcpy(o->points[o->num_of_points], point, sizeof(vec2));
 	o->num_of_points++;

@@ -1,6 +1,14 @@
 #define GLFW_INCLUDE_VULKAN
+#ifdef _WIN32
+#define VK_USE_PLATFORM_WIN32_KHR
+#include <GLFW\glfw3.h>
+#elif __linux__
 #define VK_USE_PLATFORM_XCB_KHR
 #include <GLFW/glfw3.h>
+#elif __APPLE__
+#define VK_USE_PLATFORM_MACOS_MVK
+#include <GLFW/glfw3.h>
+#endif
 #include <stdlib.h>
 #include <stdio.h>
 #include <assert.h>
@@ -124,14 +132,13 @@ static uint32_t align_uint32(uint32_t value, uint32_t alignment)
     return (value + alignment - 1) / alignment * alignment;
 }
 
-static void load_font(fd_Render *r)
+static void load_font(const char * font_face, fd_Render *r)
 {
     FT_Library library;
     FT_CHECK(FT_Init_FreeType(&library));
 
     FT_Face face;
-    FT_CHECK(FT_New_Face(library, "/usr/share/fonts/truetype/dejavu/DejaVuSerif.ttf", 0, &face));
-    //FT_CHECK(FT_New_Face(library, "Korean_Calligraphy.ttf", 0, &face));
+    FT_CHECK(FT_New_Face(library, font_face, 0, &face));
 
     FT_CHECK(FT_Set_Char_Size(face, 0, 1000 * 64, 96, 96));
 
@@ -271,7 +278,7 @@ static void create_instance(fd_Render *r)
         .flags = 0,
         .pApplicationInfo = &app_info,
 
-#ifdef DEBUG
+#if defined(DEBUG) && ! defined(__APPLE__) // debug layers not supported by MoltenVK
         .enabledLayerCount = 1,
 #else
         .enabledLayerCount = 0,
@@ -1074,9 +1081,9 @@ static void stage_buffer(fd_Render *r, VkBuffer buffer, void *data, size_t size)
     vkFreeMemory(r->device, staging_buffer_memory, NULL);
 }
 
-static void create_storage_buffer(fd_Render *r)
+static void create_storage_buffer(const char * font_face, fd_Render *r)
 {
-    load_font(r);
+	load_font(font_face, r);
 
     VkBufferCreateInfo storage_ci = {
         .sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
@@ -1337,7 +1344,7 @@ static void create_swap_chain_objects(fd_Render *r)
     create_command_buffer_fences(r);
 }
 
-static void create_vulkan_objects(fd_Render *r)
+static void create_vulkan_objects(const char * font_face, fd_Render *r)
 {
     create_instance(r);
     create_debug_report_callback(r);
@@ -1347,7 +1354,7 @@ static void create_vulkan_objects(fd_Render *r)
     create_device(r);
     create_command_pool(r);
     create_layout(r);
-    create_storage_buffer(r);
+    create_storage_buffer(font_face, r);
     create_instance_buffer(r);
     create_descriptor_pool(r);
     create_descriptor_set(r);
@@ -1621,7 +1628,9 @@ int main(int argc, const char **args)
     glfwSetMouseButtonCallback(window, mouse_button_callback);
     glfwSetScrollCallback(window, scroll_callback);
 
-    create_vulkan_objects(&render);
+    const char * font_face = argc == 1 ? "C:\\windows\\fonts\\times.ttf" : args[1];
+
+    create_vulkan_objects(font_face, &render);
 
     while (!glfwWindowShouldClose(window))
     {

@@ -1610,6 +1610,13 @@ void scroll_callback(GLFWwindow* window, double xoffset, double yoffset)
 
 int main(int argc, const char **args)
 {
+    if (argc == 1) {
+        fprintf(stderr, "Usage: %s \"<path to true type font>\"\n", args[0]);
+        exit(1);
+    }
+
+    const char * font_face = args[1];
+
     glfwInit();
 
     glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
@@ -1628,8 +1635,6 @@ int main(int argc, const char **args)
     glfwSetMouseButtonCallback(window, mouse_button_callback);
     glfwSetScrollCallback(window, scroll_callback);
 
-    const char * font_face = argc == 1 ? "C:\\windows\\fonts\\times.ttf" : args[1];
-
     create_vulkan_objects(font_face, &render);
 
     while (!glfwWindowShouldClose(window))
@@ -1645,6 +1650,9 @@ int main(int argc, const char **args)
     glfwDestroyWindow(window);
     glfwTerminate();
 
+#ifdef _WIN32
     system("pause");
+#endif
+
     return 0;
 }

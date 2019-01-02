@@ -10,12 +10,24 @@ This repository contains a Vulkan demo of the font renderer I made, an explanati
 
 Download and set the correct include and library directories to the dependencies: FreeType, GLFW, Vulkan SDK.
 
+Run the demo passing the path to a font as the first argument e.g. "C:\windows\fonts\times.ttf"
+
 ### Linux
 
-A Makefile is provided that assumes FreeType, GLFW and the Vulkan SDK are installed. It uses CMake to build and run the demo:
+Assuming FreeType, GLFW and the Vulkan SDK are installed.
+
+Use CMake and Make to build the project:
 
 ```sh
-make run-linux
+cmake -S . -B build
+make -C build
+```
+
+Run the demo passing in a font of your choice:
+
+```sh
+cd build
+./font-demo "/usr/share/fonts/truetype/dejavu/DejaVuSerif.ttf"
 ```
 
 ### macOS
@@ -36,8 +48,16 @@ brew install glfw --HEAD
 
 Download the latest [LunarG Vulkan SDK](https://vulkan.lunarg.com/sdk/home) and set up the environment variables as per the instructions [in the docs](https://vulkan.lunarg.com/doc/view/latest/mac/getting_started.html#user-content-command-line).
 
-You can then use the Makefile to build and run the demo via CMake:
+Use CMake and Make to build the project:
 
 ```sh
-make run-macos
+cmake -S . -B build
+make -C build
+```
+
+Run the demo passing in a font of your choice:
+
+```sh
+cd build
+./font-demo "/Library/Fonts/Times New Roman.ttf" 
 ```

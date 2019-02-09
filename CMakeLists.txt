@@ -1,0 +1,93 @@
+CMAKE_MINIMUM_REQUIRED(VERSION 3.9)
+
+PROJECT(font-demo VERSION 0.1.0 DESCRIPTION "SDF font demo")
+
+SET(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake")
+SET(CMAKE_CXX_FLAGS "-W -Wall")
+SET(CMAKE_EXE_LINKER_FLAGS "-lm")
+
+IF(NOT CMAKE_BUILD_TYPE)
+  SET(CMAKE_BUILD_TYPE Debug)
+ENDIF()
+MESSAGE(STATUS "${CMAKE_BUILD_TYPE} build.")
+
+if (CMAKE_BUILD_TYPE STREQUAL "Debug")
+	ADD_DEFINITIONS (-DDEBUG)
+ENDIF()
+
+set(VULKAN_SDK "$ENV{VULKAN_SDK}" CACHE STRING "LunarG Vulkan SDK path")
+if (VULKAN_SDK)
+		set(ENV{VULKAN_SDK} ${VULKAN_SDK})
+endif ()
+
+MESSAGE(STATUS "VULKAN_SDK = $ENV{VULKAN_SDK}")
+MESSAGE(STATUS "VK_LAYER_PATH = $ENV{VK_LAYER_PATH}")
+
+#be aware that system libraries have priority on SDK in the finding.
+FIND_PACKAGE(Vulkan REQUIRED)
+FIND_PACKAGE(GLFW3)
+FIND_PACKAGE(Freetype REQUIRED)
+
+# Find glslc shader compiler.
+# On Android, the NDK includes the binary, so no external dependency.
+if(ANDROID)
+	file(GLOB glslc-folders ${ANDROID_NDK}/shader-tools/*)
+else()
+	file(GLOB glslc-folders ${VULKAN_SDK}/bin)
+endif()
+FIND_PROGRAM(GLSLC glslc HINTS ${glslc-folders})
+
+SET(SHADER_DIR "shaders")
+
+if(GLSLC)
+	SET(SHADER_FILES ${SHADER_DIR}/*.frag ${SHADER_DIR}/*.vert ${SHADER_DIR}/*.geom  ${SHADER_DIR}/*.comp)
+	FILE(GLOB_RECURSE SHADERS RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} ${SHADER_FILES})
+	FOREACH(SHADER ${SHADERS})
+		SET(shader-input ${CMAKE_CURRENT_SOURCE_DIR}/${SHADER})
+		SET(shader-output ${CMAKE_CURRENT_BINARY_DIR}/${SHADER}.spv)
+		ADD_CUSTOM_COMMAND (
+		  OUTPUT ${shader-output}
+		  COMMAND ${CMAKE_COMMAND} -E make_directory "${CMAKE_CURRENT_BINARY_DIR}/${SHADER_DIR}"
+		  COMMAND ${GLSLC} ${shader-input} -o ${shader-output}
+		  COMMENT "Compiling ${shader-input}"
+		  DEPENDS ${SHADER}
+		  VERBATIM
+		)
+		SET(SHADER_OUTPUTS ${SHADER_OUTPUTS} ${shader-output})
+	ENDFOREACH()
+else()
+	SET(SHADER_FILES ${SHADER_DIR}/*.spv)
+	FILE(GLOB_RECURSE SHADERS RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} ${SHADER_FILES})
+	FOREACH(SHADER ${SHADERS})
+		SET(shader-input ${CMAKE_CURRENT_SOURCE_DIR}/${SHADER})
+		SET(shader-output ${CMAKE_CURRENT_BINARY_DIR}/${SHADER})
+		ADD_CUSTOM_COMMAND(
+		   OUTPUT  ${shader-output}
+		   COMMAND ${CMAKE_COMMAND} -E make_directory "${CMAKE_CURRENT_BINARY_DIR}/${SHADER_DIR}"
+		   COMMAND ${CMAKE_COMMAND} -E copy_if_different "${shader-input}" "${shader-output}"
+		   COMMENT "Copying ${shader-input} to ${shader-output}"
+		   DEPENDS ${SHADER}
+		   VERBATIM
+		)
+		SET(SHADER_OUTPUTS ${SHADER_OUTPUTS} ${shader-output})
+	ENDFOREACH()
+endif()
+
+ADD_CUSTOM_TARGET("${PROJECT_NAME}_Shaders" ALL DEPENDS ${SHADER_OUTPUTS})
+
+FILE(GLOB SRC *.c)
+
+ADD_EXECUTABLE(${PROJECT_NAME} ${SRC} ${SHADERS})
+
+TARGET_INCLUDE_DIRECTORIES(${PROJECT_NAME} PRIVATE
+	${Vulkan_INCLUDE_DIRS}
+	${FREETYPE_INCLUDE_DIRS}
+	${GLFW3_INCLUDE_DIRS}
+	${CMAKE_CURRENT_SOURCE_DIR}
+)
+
+TARGET_LINK_LIBRARIES(${PROJECT_NAME}
+	${Vulkan_LIBRARIES}
+	${GLFW3_LIBRARY}
+	${FREETYPE_LIBRARY}
+)

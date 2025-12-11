@@ -173,7 +173,7 @@ static void load_font(const char * font_face, fd_Render *r)
     uint32_t alignment = r->device_properties.limits.minStorageBufferOffsetAlignment;
     r->glyph_info_offset = 0;
     r->glyph_cells_offset = align_uint32(r->glyph_info_size, alignment);
-    r->glyph_points_offset = align_uint32(r->glyph_info_size + r->glyph_cells_size, alignment);
+    r->glyph_points_offset = align_uint32(r->glyph_cells_offset + r->glyph_cells_size, alignment);
     r->glyph_data_size = r->glyph_points_offset + r->glyph_points_size;
 
     r->glyph_data = malloc(r->glyph_data_size);
